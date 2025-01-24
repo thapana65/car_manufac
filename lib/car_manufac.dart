@@ -31,7 +31,6 @@ class _CarManufacState extends State<CarManufac> {
       filteredManufacturers = manufacturers
           .where((manufacturer) {
             var lowerQuery = query.toLowerCase();
-            // ตรวจสอบให้แน่ใจว่าไม่ใช่ null ก่อนทำการค้นหา
             return (manufacturer.mfrCommonName?.toLowerCase().contains(lowerQuery) ?? false) ||
                 (manufacturer.mfrName?.toLowerCase().contains(lowerQuery) ?? false) ||
                 (manufacturer.country?.toLowerCase().contains(lowerQuery) ?? false);
@@ -91,19 +90,32 @@ class _CarManufacState extends State<CarManufac> {
                               horizontal: 16.0, vertical: 12.0),
                           leading: Icon(Icons.directions_car,
                               color: Colors.blueGrey),
-                          title: Text(
-                            manufacturer.mfrCommonName ?? "No Name",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18.0,
-                              color: Colors.blueGrey,
-                            ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  manufacturer.mfrCommonName ?? "No Common Name",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18.0,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          subtitle: Text(
-                            "ID: ${manufacturer.mfrId}",
-                            style: TextStyle(
-                              color: Colors.blueGrey[600],
-                            ),
+                          subtitle: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'ID: ${manufacturer.mfrId} | ${manufacturer.mfrName ?? "No Name"}',
+                                  style: TextStyle(
+                                    color: Colors.blueGrey[600],
+                                    fontSize: 14.0,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           onTap: () {
                             // เปิดหน้าจอรายละเอียด
@@ -139,7 +151,8 @@ class CarDetailsPage extends StatelessWidget {
   CarDetailsPage(this.manufacturer);
 
   // ฟังก์ชันเพื่อแปลงค่า Enum หรือค่าคงที่เป็นข้อความที่เข้าใจง่าย
-  String getVehicleTypeName(String vehicleType) {
+  String getVehicleTypeName(String? vehicleType) {
+    // สร้างแผนที่ประเภทของรถยนต์จากชื่อที่ต้องการ
     Map<String, String> vehicleTypeMap = {
       'PASSENGER_CAR': 'Passenger Car',
       'TRUCK': 'Truck',
@@ -147,12 +160,13 @@ class CarDetailsPage extends StatelessWidget {
       // เพิ่มประเภทอื่น ๆ ที่ต้องการ
     };
 
-    return vehicleTypeMap[vehicleType] ?? vehicleType;
+    // ตรวจสอบและแปลงประเภทของรถจากชื่อในแผนที่
+    return vehicleType != null ? vehicleTypeMap[vehicleType] ?? vehicleType : "Unknown";
   }
 
   @override
   Widget build(BuildContext context) {
-    var vehicleTypes = manufacturer.vehicleTypes;
+    var vehicleTypes = manufacturer.vehicleTypes ?? []; // Default to empty list if null
 
     return Scaffold(
       appBar: AppBar(
@@ -161,16 +175,21 @@ class CarDetailsPage extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
+            // ข้อมูลของผู้ผลิต
             Text(
-              'Manufacturer: ${manufacturer.mfrName}',
+              'Manufacturer: ${manufacturer.mfrName ?? "No Name"}',
               style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             Text(
-              'Country: ${manufacturer.country}',
+              'Common Name: ${manufacturer.mfrCommonName ?? "No Common Name"}',
+              style: TextStyle(fontSize: 16.0, color: Colors.blueGrey),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Country: ${manufacturer.country ?? "Unknown"}',
               style: TextStyle(fontSize: 16.0),
             ),
             SizedBox(height: 20),
@@ -180,24 +199,35 @@ class CarDetailsPage extends StatelessWidget {
             ),
             SizedBox(height: 10),
             // แสดงประเภทของรถยนต์
-            ...(vehicleTypes?.isNotEmpty ?? false)
-                ? vehicleTypes!.map<Widget>((vehicle) {
-                    return Row(
-                      children: [
-                        Icon(
-                          vehicle.isPrimary! ? Icons.check_circle : Icons.cancel,
-                          color: vehicle.isPrimary! ? Colors.green : Colors.red,
-                        ),
-                        SizedBox(width: 10),
-                        // แสดงประเภทของรถยนต์ในรูปแบบที่เข้าใจง่าย
-                        Text(
-                          getVehicleTypeName(vehicle.name?.toString() ?? "Unknown"),
-                          style: TextStyle(fontSize: 16.0),
-                        ),
-                      ],
+            ...(vehicleTypes.isNotEmpty
+                ? vehicleTypes.map<Widget>((vehicle) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            vehicle.isPrimary! ? Icons.check_circle : Icons.cancel,
+                            color: vehicle.isPrimary! ? Colors.green : Colors.red,
+                          ),
+                          SizedBox(width: 10),
+                          // แสดงประเภทของรถยนต์ในรูปแบบที่เข้าใจง่าย
+                          Expanded(
+                            child: Text(
+                              getVehicleTypeName(vehicle.name?.toString() ?? "Unknown"),
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }).toList()
-                : [],
+                : [Text('No vehicle types available')]), // Use a list with one element if empty
+            SizedBox(height: 20),
+            // แสดงข้อมูลเพิ่มเติม
+            Text(
+              'Manufacturer ID: ${manufacturer.mfrId ?? "No ID"}',
+              style: TextStyle(fontSize: 16.0, color: Colors.blueGrey[600]),
+            ),
           ],
         ),
       ),
